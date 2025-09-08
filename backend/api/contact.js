@@ -1,32 +1,54 @@
 const { createClient } = require('@supabase/supabase-js');
 const { Resend } = require('resend');
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE);
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE
+);
 const resend = new Resend(process.env.RESEND_API_KEY);
-const ADMIN = process.env.ADMIN_EMAIL || 'admin@myautoimport.es';
+
+function setCors(req, res) {
+  const origin = process.env.FRONTEND_ORIGIN || 'https://my-auto-importfrontend.vercel.app';
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Vary', 'Origin');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+}
 
 module.exports = async (req, res) => {
-  if (req.method !== 'POST') { res.status(405).end(); return; }
-  const { name, email, phone = '', message = '', vehicleId = null } = req.body || {};
-  if (!name || !email) { res.status(400).json({ error: 'name y email obligatorios' }); return; }
+  setCors(req, res);
 
-  const { error } = await supabase.from('leads').insert([{ name, email, phone, message, vehicle_id: vehicleId }]);
-  if (error) { res.status(500).json({ error: error.message }); return; }
+  if (req.method === 'OPTIONS') { // Preflight
+    res.status(200).end();
+    return;
+  }
+  if (req.method !== 'POST') {
+    res.status(405).end();
+    return;
+  }
 
   try {
-    await resend.emails.send({
-      from: 'Autoimport <admin@myautoimport.es>',
-      to: [ADMIN],
-      subject: 'Nuevo lead',
-      text: `Nombre: ${name}\nEmail: ${email}\nTel: ${phone}\nVehículo: ${vehicleId}\nMensaje:\n${message}`
-    });
-    await resend.emails.send({
-      from: 'Autoimport <info@myautoimport.es>',
-      to: [email],
-      subject: 'Recibimos tu solicitud',
-      text: `Hola ${name}, gracias por contactarnos. Te responderemos pronto.`
-    });
-  } catch (_) { /* no bloquea la respuesta si falla el correo */ }
+    const { name, email, phone, message } = req.body || {};
+    if (!name || !email || !message) {
+      res.status(400).json({ error: 'Faltan campos obligatorios.' });
+      return;
+    }
 
-  res.status(200).json({ ok: true });
+    // Guarda el lead
+    const { error: dbError } = await supabase.from('leads').insert([{ name, email, phone, message }]);
+    if (dbError) throw dbError;
+
+    // Envía email (usa onboarding@resend.dev si tu dominio no está verificado)
+    const to = process.env.ADMIN_EMAIL || 'info@myautoimport.es';
+    await resend.emails.send({
+      from: 'onboarding@resend.dev', // cambia a tu remitente verificado cuando lo tengas
+      to,
+      subject: 'Nuevo lead de AutoImport Iberia',
+      text: `Nombre: ${name}\nEmail: ${email}\nTeléfono: ${phone || '-'}\n\nMensaje:\n${message}`
+    });
+
+    res.status(200).json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message || 'Error interno' });
+  }
 };

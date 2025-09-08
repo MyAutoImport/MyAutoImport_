@@ -7,6 +7,18 @@ import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
 import { mockCars, companyInfo } from '../mockData';
 
+const API_BASE = process.env.REACT_APP_API_BASE; // e.g. https://my-auto-importbackend.vercel.app
+
+// Helper para imágenes relativas (/img/...)
+const resolveImg = (src) => {
+  if (!src) return '';
+  if (src.startsWith('http')) return src;
+  return `${process.env.PUBLIC_URL || ''}${src}`;
+};
+
+// Coincidir id numérico o string (mock vs Supabase)
+const sameId = (a, b) => String(a) === String(b);
+
 const CarDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -14,12 +26,49 @@ const CarDetailPage = () => {
   const [car, setCar] = useState(null);
 
   useEffect(() => {
-    const foundCar = mockCars.find(c => c.id === parseInt(id));
-    if (foundCar) {
-      setCar(foundCar);
-    } else {
-      navigate('/stock');
+    let cancelled = false;
+
+    async function load() {
+      // 1) Intentar API
+      try {
+        if (API_BASE) {
+          const res = await fetch(`${API_BASE}/api/vehicles`);
+          if (res.ok) {
+            const list = await res.json();
+            const found = list.find((v) => sameId(v.id, id));
+            if (!cancelled && found) {
+              // Normalizar imágenes a URLs absolutas si son relativas
+              const norm = {
+                ...found,
+                images: Array.isArray(found.images)
+                  ? found.images.map(resolveImg)
+                  : []
+              };
+              setCar(norm);
+              return;
+            }
+          }
+        }
+      } catch (_) {
+        // ignorar y caer a mock
+      }
+
+      // 2) Fallback: mockCars
+      const fromMock = mockCars.find((c) => sameId(c.id, id));
+      if (!cancelled && fromMock) {
+        setCar({
+          ...fromMock,
+          images: Array.isArray(fromMock.images)
+            ? fromMock.images.map(resolveImg)
+            : []
+        });
+      } else if (!cancelled) {
+        navigate('/stock');
+      }
     }
+
+    load();
+    return () => { cancelled = true; };
   }, [id, navigate]);
 
   const handleContactClick = () => {
@@ -72,7 +121,7 @@ const CarDetailPage = () => {
           <div className="space-y-6">
             <div className="relative rounded-2xl overflow-hidden shadow-xl">
               <img 
-                src={car.images[currentImageIndex]} 
+                src={resolveImg(car.images[currentImageIndex])}
                 alt={`${car.make} ${car.model} - Imagen ${currentImageIndex + 1}`}
                 className="w-full h-96 lg:h-[500px] object-cover"
               />
@@ -105,11 +154,11 @@ const CarDetailPage = () => {
                   <div className="flex items-center justify-between">
                     <div className="text-slate-700">
                       <span className="text-sm">Llegada estimada:</span>
-                      <div className="font-medium">{car.estimatedArrival}</div>
+                      <div className="font-medium">{car.estimatedArrival || '—'}</div>
                     </div>
                     <div className="flex items-center space-x-2 text-slate-700">
                       <MapPin className="h-4 w-4" />
-                      <span className="text-sm">{car.location}</span>
+                      <span className="text-sm">{car.location || '—'}</span>
                     </div>
                   </div>
                 </div>
@@ -130,7 +179,7 @@ const CarDetailPage = () => {
                     }`}
                   >
                     <img 
-                      src={image} 
+                      src={resolveImg(image)}
                       alt={`${car.make} ${car.model} - Miniatura ${index + 1}`}
                       className="w-20 h-20 object-cover"
                     />
@@ -149,19 +198,19 @@ const CarDetailPage = () => {
                     {car.make} {car.model}
                   </h1>
                   <p className="text-lg text-slate-600 mt-2">
-                    Año {car.year} • {car.mileage.toLocaleString()} km
+                    Año {car.year} • {car.mileage?.toLocaleString?.('es-ES') || car.mileage} km
                   </p>
                 </div>
                 <div className="text-right">
                   <div className="text-3xl font-bold text-slate-900">
-                    €{car.price.toLocaleString()}
+                    €{(car.price ?? 0).toLocaleString('es-ES')}
                   </div>
                   <div className="text-sm text-slate-600">Precio final</div>
                 </div>
               </div>
 
               <p className="text-slate-700 leading-relaxed">
-                {car.description}
+                {car.description || ''}
               </p>
             </div>
 
@@ -190,14 +239,14 @@ const CarDetailPage = () => {
                     <Settings className="h-5 w-5 text-slate-600" />
                     <div>
                       <div className="font-medium text-slate-900">Transmisión</div>
-                      <div className="text-slate-600">{car.transmission}</div>
+                      <div className="text-slate-600">{car.transmission || '—'}</div>
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
                     <Palette className="h-5 w-5 text-slate-600" />
                     <div>
                       <div className="font-medium text-slate-900">Color</div>
-                      <div className="text-slate-600">{car.color}</div>
+                      <div className="text-slate-600">{car.color || '—'}</div>
                     </div>
                   </div>
                 </div>
@@ -211,7 +260,7 @@ const CarDetailPage = () => {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {car.features.map((feature, index) => (
+                  {(car.features || []).map((feature, index) => (
                     <div key={index} className="flex items-center space-x-2">
                       <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
                       <span className="text-slate-700">{feature}</span>
@@ -275,14 +324,13 @@ const CarDetailPage = () => {
         <div className="mt-16">
           <h2 className="text-2xl font-bold text-slate-900 mb-8">Vehículos Similares</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {mockCars
-              .filter(c => c.id !== car.id && c.make === car.make)
-              .slice(0, 3)
-              .map((similarCar) => (
+            {(mockCars
+              .filter(c => !sameId(c.id, car.id) && c.make === car.make)
+              .slice(0, 3)).map((similarCar) => (
                 <Card key={similarCar.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-slate-200">
                   <div className="relative overflow-hidden rounded-t-lg">
                     <img 
-                      src={similarCar.images[0]} 
+                      src={resolveImg(similarCar.images[0])}
                       alt={`${similarCar.make} ${similarCar.model}`}
                       className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500"
                     />
@@ -298,7 +346,7 @@ const CarDetailPage = () => {
                       {similarCar.make} {similarCar.model}
                     </h3>
                     <p className="text-xl font-bold text-slate-900">
-                      €{similarCar.price.toLocaleString()}
+                      €{similarCar.price.toLocaleString('es-ES')}
                     </p>
                   </CardHeader>
                   

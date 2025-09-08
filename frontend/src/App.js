@@ -1,5 +1,3 @@
-REACT_APP_API_BASE=https://my-auto-importbackend.vercel.app/
-
 import React from "react";
 import "./App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";

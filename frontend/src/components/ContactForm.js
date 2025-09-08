@@ -11,15 +11,10 @@ export default function ContactForm({ vehicleId = null }) {
     e.preventDefault();
     setStatus('Enviando…');
     try {
-      const res = await fetch(`${API_BASE}/api/contact`, {
+      const res = await fetch(`${process.env.REACT_APP_API_BASE}/api/contact`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: form.name.trim(),
-          email: form.email.trim(),
-          phone: form.phone.trim(),
-          message: form.message.trim(),
-          vehicleId: form.vehicleId || null,
+        body: JSON.stringify({ name, email, phone, message }),
         })
       });
       if (!res.ok) throw new Error();

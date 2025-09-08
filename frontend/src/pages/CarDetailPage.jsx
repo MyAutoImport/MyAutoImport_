@@ -25,51 +25,32 @@ const CarDetailPage = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [car, setCar] = useState(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  // ...
+useEffect(() => {
+  // si es número, sigue usando mock; si no, pide al backend
+  const isNumeric = /^\d+$/.test(id);
 
-    async function load() {
-      // 1) Intentar API
-      try {
-        if (API_BASE) {
-          const res = await fetch(`${API_BASE}/api/vehicles`);
-          if (res.ok) {
-            const list = await res.json();
-            const found = list.find((v) => sameId(v.id, id));
-            if (!cancelled && found) {
-              // Normalizar imágenes a URLs absolutas si son relativas
-              const norm = {
-                ...found,
-                images: Array.isArray(found.images)
-                  ? found.images.map(resolveImg)
-                  : []
-              };
-              setCar(norm);
-              return;
-            }
-          }
-        }
-      } catch (_) {
-        // ignorar y caer a mock
-      }
-
-      // 2) Fallback: mockCars
-      const fromMock = mockCars.find((c) => sameId(c.id, id));
-      if (!cancelled && fromMock) {
-        setCar({
-          ...fromMock,
-          images: Array.isArray(fromMock.images)
-            ? fromMock.images.map(resolveImg)
-            : []
-        });
-      } else if (!cancelled) {
-        navigate('/stock');
-      }
+  async function load() {
+    if (isNumeric) {
+      const found = mockCars.find(c => c.id === parseInt(id, 10));
+      if (found) setCar(found);
+      else navigate('/stock');
+      return;
     }
+    // UUID desde Supabase
+    try {
+      const resp = await fetch(`${API_BASE}/api/vehicles?id=${encodeURIComponent(id)}`);
+      if (!resp.ok) throw new Error('No encontrado');
+      const data = await resp.json();
+      if (data) setCar(data);
+      else navigate('/stock');
+    } catch {
+      navigate('/stock');
+    }
+  }
 
-    load();
-    return () => { cancelled = true; };
-  }, [id, navigate]);
+  load();
+}, [id, navigate]);
 
   const handleContactClick = () => {
     toast.success('¡Solicitud enviada! Nos pondremos en contacto contigo pronto para más información sobre este vehículo.');

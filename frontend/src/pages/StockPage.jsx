@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { fetchVehicles } from '../lib/api';
+const API_BASE = process.env.REACT_APP_API_BASE;
 
 export default function StockPage() {
   const [cars, setCars] = useState([]);
@@ -9,7 +9,9 @@ export default function StockPage() {
   useEffect(() => {
     (async () => {
       try {
-        const data = await fetchVehicles();
+        const res = await fetch(`${API_BASE}/api/vehicles`);
+        if (!res.ok) throw new Error('fail');
+        const data = await res.json();
         setCars(data);
       } catch (e) {
         setErr('No se pudo cargar el stock');

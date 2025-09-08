@@ -1,3 +1,11 @@
+import ContactForm from '../components/ContactForm';
+// …
+<section className="container mx-auto px-4 py-10">
+  <h2 className="text-2xl font-semibold mb-4">Contactar</h2>
+  <ContactForm />
+</section>
+
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Star, Shield, Clock, Phone, Mail, MapPin, CheckCircle, Car } from 'lucide-react';

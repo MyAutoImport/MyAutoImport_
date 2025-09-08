@@ -1,151 +1,139 @@
 <!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="theme-color" content="#000000" />
-        <meta name="description" content="A product of emergent.sh" />
-        <!--
-      manifest.json provides metadata used when your web app is installed on a
-      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
-    -->
-        <!--
-      Notice the use of %PUBLIC_URL% in the tags above.
-      It will be replaced with the URL of the `public` folder during the build.
-      Only files inside the `public` folder can be referenced from the HTML.
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="A product of emergent.sh" />
+    <title>Emergent | Fullstack App</title>
+    <style>
+      /* estilos mínimos para que se vea decente incluso sin tu CSS */
+      .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin:24px 0}
+      .card{border:1px solid #e5e7eb;border-radius:12px;overflow:hidden}
+      .card img{width:100%;height:160px;object-fit:cover}
+      .card h3{margin:12px 12px 4px;font-size:18px}
+      .card p{margin:4px 12px;color:#4b5563}
+      .card button{margin:12px;border:0;padding:10px 12px;border-radius:8px;background:#111827;color:#fff;cursor:pointer}
+      form#contact-form{display:grid;gap:10px;max-width:560px;margin:28px 0}
+      form#contact-form input,form#contact-form textarea{padding:10px;border:1px solid #e5e7eb;border-radius:8px}
+      #contact-status{margin-top:6px;color:#111827}
+      .container{max-width:1120px;margin:0 auto;padding:0 16px}
+    </style>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
 
-      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-      work correctly both with client-side routing and a non-root public URL.
-      Learn how to configure a non-root public URL by running `npm run build`.
-    -->
-        <title>Emergent | Fullstack App</title>
-    </head>
-    <body>
-        <noscript>You need to enable JavaScript to run this app.</noscript>
-        <div id="root"></div>
-        <!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
+    <!-- Tu app (si usas React montará aquí). Lo dejamos intacto -->
+    <div id="root"></div>
 
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
+    <!-- Bloque de STOCK + CONTACTO (se renderiza incluso sin React) -->
+    <div class="container">
+      <h2>Stock disponible</h2>
+      <div id="stock-grid" class="grid"></div>
 
-      To begin the development, run `npm start` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
-        <a
-            id="emergent-badge"
-            target="_blank"
-            href="https://app.emergent.sh/?utm_source=emergent-badge"
-            style="
-                display: flex !important;
-                align-items: center !important;
-                position: fixed !important;
-                bottom: 20px;
-                right: 20px;
-                text-decoration: none;
-                padding: 6px 10px;
-                font-family: -apple-system, BlinkMacSystemFont,
-                    &quot;Segoe UI&quot;, Roboto, Oxygen, Ubuntu, Cantarell,
-                    &quot;Open Sans&quot;, &quot;Helvetica Neue&quot;,
-                    sans-serif !important;
-                font-size: 12px !important;
-                z-index: 9999 !important;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
-                border-radius: 8px !important;
-                background-color: #ffffff !important;
-                border: 1px solid rgba(255, 255, 255, 0.25) !important;
-            "
-        >
-            <div
-                style="display: flex; flex-direction: row; align-items: center"
-            >
-                <img
-                    style="width: 20px; height: 20px; margin-right: 8px"
-                    src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4"
-                />
-                <p
-                    style="
-                        color: #000000;
-                        font-family: -apple-system, BlinkMacSystemFont,
-                            &quot;Segoe UI&quot;, Roboto, Oxygen, Ubuntu,
-                            Cantarell, &quot;Open Sans&quot;,
-                            &quot;Helvetica Neue&quot;, sans-serif !important;
-                        font-size: 12px !important;
-                        align-items: center;
-                        margin-bottom: 0;
-                    "
-                >
-                    Made with Emergent
-                </p>
-            </div>
-        </a>
-        <script>
-            !(function (t, e) {
-                var o, n, p, r;
-                e.__SV ||
-                    ((window.posthog = e),
-                    (e._i = []),
-                    (e.init = function (i, s, a) {
-                        function g(t, e) {
-                            var o = e.split(".");
-                            2 == o.length && ((t = t[o[0]]), (e = o[1])),
-                                (t[e] = function () {
-                                    t.push(
-                                        [e].concat(
-                                            Array.prototype.slice.call(
-                                                arguments,
-                                                0,
-                                            ),
-                                        ),
-                                    );
-                                });
-                        }
-                        ((p = t.createElement("script")).type =
-                            "text/javascript"),
-                            (p.crossOrigin = "anonymous"),
-                            (p.async = !0),
-                            (p.src =
-                                s.api_host.replace(
-                                    ".i.posthog.com",
-                                    "-assets.i.posthog.com",
-                                ) + "/static/array.js"),
-                            (r =
-                                t.getElementsByTagName(
-                                    "script",
-                                )[0]).parentNode.insertBefore(p, r);
-                        var u = e;
-                        for (
-                            void 0 !== a ? (u = e[a] = []) : (a = "posthog"),
-                                u.people = u.people || [],
-                                u.toString = function (t) {
-                                    var e = "posthog";
-                                    return (
-                                        "posthog" !== a && (e += "." + a),
-                                        t || (e += " (stub)"),
-                                        e
-                                    );
-                                },
-                                u.people.toString = function () {
-                                    return u.toString(1) + ".people (stub)";
-                                },
-                                o =
-                                    "init me ws ys ps bs capture je Di ks register register_once register_for_session unregister unregister_for_session Ps getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSurveysLoaded onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey canRenderSurveyAsync identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty Es $s createPersonProfile Is opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing Ss debug xs getPageViewId captureTraceFeedback captureTraceMetric".split(
-                                        " ",
-                                    ),
-                                n = 0;
-                            n < o.length;
-                            n++
-                        )
-                            g(u, o[n]);
-                        e._i.push([i, s, a]);
-                    }),
-                    (e.__SV = 1));
-            })(document, window.posthog || []);
-            posthog.init("phc_yJW1VjHGGwmCbbrtczfqqNxgBDbhlhOWcdzcIJEOTFE", {
-                api_host: "https://us.i.posthog.com",
-                person_profiles: "identified_only", // or 'always' to create profiles for anonymous users as well
+      <h2>Contactar</h2>
+      <form id="contact-form">
+        <input name="name" placeholder="Nombre" required />
+        <input name="email" type="email" placeholder="Email" required />
+        <input name="phone" placeholder="Teléfono" />
+        <textarea name="message" placeholder="Mensaje" rows="4"></textarea>
+        <input type="hidden" name="vehicleId" />
+        <button type="submit">Enviar</button>
+      </form>
+      <div id="contact-status"></div>
+    </div>
+
+    <!-- Badge Emergent (original) -->
+    <a
+      id="emergent-badge"
+      target="_blank"
+      href="https://app.emergent.sh/?utm_source=emergent-badge"
+      style="display:flex!important;align-items:center!important;position:fixed!important;bottom:20px;right:20px;text-decoration:none;padding:6px 10px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,'Open Sans','Helvetica Neue',sans-serif!important;font-size:12px!important;z-index:9999!important;box-shadow:0 2px 8px rgba(0,0,0,.15)!important;border-radius:8px!important;background-color:#fff!important;border:1px solid rgba(255,255,255,.25)!important;">
+      <div style="display:flex;flex-direction:row;align-items:center">
+        <img style="width:20px;height:20px;margin-right:8px" src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
+        <p style="color:#000;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,'Open Sans','Helvetica Neue',sans-serif!important;font-size:12px!important;align-items:center;margin-bottom:0">
+          Made with Emergent
+        </p>
+      </div>
+    </a>
+
+    <!-- Script: carga stock y envía contacto -->
+    <script type="module">
+      const API_BASE = 'https://my-auto-import-emergent-42au.vercel.app';
+
+      async function loadStock() {
+        try {
+          const res = await fetch(`${API_BASE}/api/vehicles`);
+          if (!res.ok) throw new Error('Error cargando stock');
+          const cars = await res.json();
+          const grid = document.getElementById('stock-grid');
+          if (!grid) return;
+
+          grid.innerHTML = cars.map(c => `
+            <article class="card">
+              <img src="${(c.images?.[0] || '/img/placeholder.jpg')}" alt="${c.make} ${c.model}" />
+              <h3>${c.make} ${c.model} (${c.year})</h3>
+              <p>${Number(c.price ?? 0).toLocaleString('es-ES',{style:'currency',currency:'EUR'})}</p>
+              <p>${c.fuel ?? ''} · ${(c.mileage ?? 0).toLocaleString('es-ES')} km</p>
+              <button class="contact-btn" data-vehicle="${c.id}">Contactar</button>
+            </article>
+          `).join('');
+
+          grid.querySelectorAll('.contact-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const form = document.getElementById('contact-form');
+              if (form) {
+                form.vehicleId.value = btn.dataset.vehicle;
+                form.scrollIntoView({ behavior: 'smooth' });
+              }
             });
-        </script>
-    </body>
+          });
+        } catch (e) { console.error(e); }
+      }
+
+      function wireContactForm() {
+        const form = document.getElementById('contact-form');
+        const status = document.getElementById('contact-status');
+        if (!form) return;
+
+        form.addEventListener('submit', async (ev) => {
+          ev.preventDefault();
+          status.textContent = 'Enviando…';
+
+          const data = Object.fromEntries(new FormData(form).entries());
+          const payload = {
+            name: (data.name || '').trim(),
+            email: (data.email || '').trim(),
+            phone: (data.phone || '').trim(),
+            message: (data.message || '').trim(),
+            vehicleId: data.vehicleId || null,
+          };
+
+          try {
+            const res = await fetch(`${API_BASE}/api/contact`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            if (!res.ok) throw new Error('Fallo al enviar');
+            status.textContent = '¡Enviado! Te contactaremos en breve.';
+            form.reset();
+          } catch (e) {
+            console.error(e);
+            status.textContent = 'Error al enviar. Intenta de nuevo.';
+          }
+        });
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        loadStock();
+        wireContactForm();
+      });
+    </script>
+
+    <!-- PostHog (original) -->
+    <script>
+      !(function(t,e){var o,n,p,r;e.__SV||((window.posthog=e),(e._i=[]),(e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&((t=t[o[0]]),(e=o[1])),(t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0),));});}((p=t.createElement("script")).type="text/javascript"),(p.crossOrigin="anonymous"),(p.async=!0),(p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js"),(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?(u=e[a]=[]):a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e;},u.people.toString=function(){return u.toString(1)+".people (stub)";},o="init me ws ys ps bs capture je Di ks register register_once register_for_session unregister unregister_for_session Ps getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSurveysLoaded onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey canRenderSurveyAsync identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty Es $s createPersonProfile Is opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing Ss debug xs getPageViewId captureTraceFeedback captureTraceMetric".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a]);}),(e.__SV=1));})(document,window.posthog||[]);posthog.init("phc_yJW1VjHGGwmCbbrtczfqqNxgBDbhlhOWcdzcIJEOTFE",{api_host:"https://us.i.posthog.com",person_profiles:"identified_only"});
+    </script>
+  </body>
 </html>

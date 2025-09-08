@@ -1,58 +1,68 @@
-const { Resend } = require('resend');
-const { setCors, handlePreflight } = require('./_cors');
+// backend/api/contact.js (CommonJS)
+const { Resend } = require("resend");
+const { createClient } = require("@supabase/supabase-js");
+const { setCors, handlePreflight } = require("./_cors");
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "info@autoimportiberia.es";
+
+// Para guardar leads opcionalmente:
+const supabase =
+  process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE
+    ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE)
+    : null;
 
 module.exports = async (req, res) => {
+  // Preflight
   if (handlePreflight(req, res)) return;
 
   setCors(res);
 
-  if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method Not Allowed' });
+  if (req.method !== "POST") {
+    res.status(405).json({ error: "Method Not Allowed" });
     return;
   }
 
   try {
-    const { name = '', email = '', phone = '', message = '' } = req.body || {};
-
+    const { name, email, phone, message } = req.body || {};
     if (!name || !email || !message) {
-      res.status(400).json({ error: 'Faltan campos obligatorios' });
+      res.status(400).json({ error: "Missing required fields" });
       return;
     }
 
-    // 1) (opcional) Persistir lead en tu BBDD si quieres, p.e. tabla "leads"
-    // const { createClient } = require('@supabase/supabase-js');
-    // const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE);
-    // await supabase.from('leads').insert({ name, email, phone, message });
+    // 1) Guardar lead (opcional; ignora errores)
+    if (supabase) {
+      await supabase
+        .from("leads")
+        .insert([
+          {
+            name,
+            email,
+            phone: phone || null,
+            message,
+            source: "website",
+            created_at: new Date().toISOString()
+          }
+        ]);
+    }
 
     // 2) Enviar email con Resend
-    const toEmail = process.env.ADMIN_EMAIL || 'info@autoi...'; // tu email destino
-    const subject = `Nuevo lead de ${name}`;
-    const html = `
-      <h2>Nuevo contacto</h2>
-      <p><strong>Nombre:</strong> ${name}</p>
-      <p><strong>Email:</strong> ${email}</p>
-      <p><strong>Teléfono:</strong> ${phone || '-'}</p>
-      <p><strong>Mensaje:</strong></p>
-      <p>${(message || '').replace(/\n/g, '<br>')}</p>
-    `;
-
-    const { error: mailError } = await resend.emails.send({
-      from: 'Autolimport Iberia <noreply@autoi.mydomain>', // configura tu dominio verificado en Resend
-      to: [toEmail],
-      reply_to: email,
-      subject,
-      html
+    await resend.emails.send({
+      from: "MyAutoImport <onboarding@resend.dev>", // tu sender verificado si lo tienes
+      to: [ADMIN_EMAIL],
+      subject: "Nuevo lead desde la web",
+      text: [
+        `Nombre: ${name}`,
+        `Email: ${email}`,
+        `Teléfono: ${phone || "-"}`,
+        "",
+        `Mensaje:`,
+        message
+      ].join("\n")
     });
-
-    if (mailError) {
-      res.status(500).json({ error: mailError.message || 'Error enviando email' });
-      return;
-    }
 
     res.status(200).json({ ok: true });
   } catch (err) {
-    res.status(500).json({ error: err.message || 'Unexpected error' });
+    res.status(500).json({ error: err.message || "Server error" });
   }
 };

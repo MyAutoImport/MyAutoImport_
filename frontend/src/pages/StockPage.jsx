@@ -35,7 +35,7 @@ export default function StockPage() {
               {new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(c.price ?? 0)}
               {' · '}{c.fuel ?? ''}{' · '}{(c.mileage ?? 0).toLocaleString('es-ES')} km
             </p>
-            <a href={`/coche/${c.id}`} className="inline-block mt-3 px-4 py-2 rounded-xl bg-black text-white">Ver detalles</a>
+            <a href={`/coche/${v.id}`} className="inline-block mt-3 px-4 py-2 rounded-xl bg-black text-white">Ver detalles</a>
           </div>
         </article>
       ))}

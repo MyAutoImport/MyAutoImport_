@@ -1,38 +1,109 @@
-import React, { useState } from 'react';
-const API_BASE = process.env.REACT_APP_API_BASE;
+import React, { useState } from "react";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Textarea } from "./ui/textarea";
+import { toast } from "sonner";
 
-export default function ContactForm({ vehicleId = null }) {
-  const [form, setForm] = useState({ name:'', email:'', phone:'', message:'', vehicleId });
-  const [status, setStatus] = useState('');
+const API_BASE = (process.env.REACT_APP_API_BASE || "").replace(/\/$/, "");
 
-  const onChange = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+const initialForm = { name: "", email: "", phone: "", message: "" };
+
+export default function ContactForm() {
+  const [form, setForm] = useState(initialForm);
+  const [loading, setLoading] = useState(false);
+  const [errMsg, setErrMsg] = useState("");
+
+  const onChange = (e) => {
+    const { name, value } = e.target;
+    setForm((f) => ({ ...f, [name]: value }));
+  };
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    setStatus('Enviando…');
+    setErrMsg("");
+    setLoading(true);
+
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_BASE}/api/contact`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, phone, message }),
-        })
+      const res = await fetch(`${API_BASE}/api/contact`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
       });
-      if (!res.ok) throw new Error();
-      setStatus('¡Enviado! Te contactaremos en breve.');
-      setForm({ name:'', email:'', phone:'', message:'', vehicleId });
-    } catch {
-      setStatus('Error al enviar. Intenta de nuevo.');
+
+      if (!res.ok) {
+        // Intenta leer mensaje del backend si existe
+        let msg = `Error ${res.status}`;
+        try {
+          const data = await res.json();
+          if (data?.error) msg = data.error;
+        } catch {}
+        throw new Error(msg);
+      }
+
+      toast.success("¡Mensaje enviado! Te contactaremos pronto.");
+      setForm(initialForm);
+    } catch (err) {
+      console.error(err);
+      setErrMsg("Error al enviar. Intenta de nuevo.");
+      toast.error("No se pudo enviar el formulario.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-3 max-w-xl">
-      <input name="name" value={form.name} onChange={onChange} placeholder="Nombre" required className="border rounded-xl p-3" />
-      <input name="email" type="email" value={form.email} onChange={onChange} placeholder="Email" required className="border rounded-xl p-3" />
-      <input name="phone" value={form.phone} onChange={onChange} placeholder="Teléfono" className="border rounded-xl p-3" />
-      <textarea name="message" value={form.message} onChange={onChange} placeholder="Mensaje" rows="4" className="border rounded-xl p-3" />
-      <button type="submit" className="px-4 py-2 rounded-xl bg-black text-white">Enviar</button>
-      {status && <div className="text-sm">{status}</div>}
+    <form onSubmit={onSubmit} className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Input
+          name="name"
+          type="text"
+          placeholder="Nombre"
+          value={form.name}
+          onChange={onChange}
+          required
+          className="border-slate-300 focus:border-slate-500"
+        />
+        <Input
+          name="email"
+          type="email"
+          placeholder="tu@email.com"
+          value={form.email}
+          onChange={onChange}
+          required
+          className="border-slate-300 focus:border-slate-500"
+        />
+      </div>
+
+      <Input
+        name="phone"
+        type="tel"
+        placeholder="Teléfono"
+        value={form.phone}
+        onChange={onChange}
+        className="border-slate-300 focus:border-slate-500"
+      />
+
+      <Textarea
+        name="message"
+        placeholder="Cuéntanos qué vehículo buscas…"
+        value={form.message}
+        onChange={onChange}
+        required
+        rows={4}
+        className="border-slate-300 focus:border-slate-500"
+      />
+
+      {errMsg && (
+        <p className="text-sm text-red-600 -mt-2">{errMsg}</p>
+      )}
+
+      <Button
+        type="submit"
+        disabled={loading}
+        className="w-full bg-slate-900 hover:bg-slate-700 text-white py-3"
+      >
+        {loading ? "Enviando…" : "Enviar"}
+      </Button>
     </form>
   );
 }

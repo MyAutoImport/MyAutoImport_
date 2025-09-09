@@ -6,41 +6,40 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE
 );
 
-// Orígenes permitidos igual que en contact.js
-const PROD_ORIGIN = process.env.FRONTEND_ORIGIN || 'https://my-auto-importfrontend.vercel.app';
+const PROD_ORIGIN   = process.env.FRONTEND_ORIGIN || 'https://my-auto-importfrontend.vercel.app';
 const EXTRA_ORIGINS = (process.env.FRONTEND_ORIGINS || '')
   .split(',')
   .map(s => s.trim())
   .filter(Boolean);
 
-function isAllowedOrigin(origin) {
-  if (!origin) return false;
-  if (origin === PROD_ORIGIN) return true;
-  if (EXTRA_ORIGINS.includes(origin)) return true;
-
+function pickAllowedOrigin(origin) {
   try {
-    const u = new URL(origin);
-    const host = u.hostname;
-    const isHttps = u.protocol === 'https:';
-    const isPreview =
-      host.endsWith('.vercel.app') &&
-      (host.startsWith('my-auto-importfrontend-') || host === 'my-auto-importfrontend.vercel.app');
-    return isHttps && isPreview;
+    if (!origin) return PROD_ORIGIN;
+    if (origin === PROD_ORIGIN) return origin;
+    if (EXTRA_ORIGINS.includes(origin)) return origin;
+    const previewRE = /^https:\/\/my-auto-importfrontend(?:-[a-z0-9-]+)?\.vercel\.app$/i;
+    if (previewRE.test(origin)) return origin;
+    return PROD_ORIGIN;
   } catch {
-    return false;
+    return PROD_ORIGIN;
   }
 }
 
 function setCors(req, res) {
-  const origin = req.headers.origin;
-  const allow = isAllowedOrigin(origin) ? origin : PROD_ORIGIN;
-
-  if (allow) res.setHeader('Access-Control-Allow-Origin', allow);
-  res.setHeader('Vary', 'Origin');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-  res.setHeader('Access-Control-Max-Age', '86400');
-  res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+  try {
+    const allow = pickAllowedOrigin(req.headers.origin);
+    res.setHeader('Access-Control-Allow-Origin', allow);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.setHeader('Access-Control-Max-Age', '86400');
+    res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+  } catch {
+    res.setHeader('Access-Control-Allow-Origin', PROD_ORIGIN);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  }
 }
 
 module.exports = async (req, res) => {
@@ -67,7 +66,6 @@ module.exports = async (req, res) => {
       .order('created_at', { ascending: false });
 
     if (q) {
-      // Buscar por make/model
       query = query.or(`model.ilike.%${q}%,make.ilike.%${q}%`);
     }
 

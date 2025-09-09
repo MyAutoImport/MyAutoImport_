@@ -1,23 +1,57 @@
 // backend/api/contact.js
 // Node.js runtime en Vercel, CommonJS con import dinámico para módulos ESM.
 
-const ALLOWED_ORIGIN = process.env.FRONTEND_ORIGIN || 'https://my-auto-importfrontend.vercel.app';
-const RESEND_KEY     = process.env.RESEND_API_KEY;
-const RESEND_FROM    = process.env.RESEND_FROM;     // p.ej. 'info@myautoimport.es'
-const ADMIN_EMAIL    = process.env.ADMIN_EMAIL;     // destino leads (tu buzón)
+// ========= C O N F I G =========
+const RESEND_KEY  = process.env.RESEND_API_KEY;
+const RESEND_FROM = process.env.RESEND_FROM;   // p.ej. 'info@myautoimport.es'
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;   // destino de los leads
 
-function setCors(res) {
-  res.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
+// Orígenes permitidos (prod + lista CSV opcional)
+const PROD_ORIGIN = process.env.FRONTEND_ORIGIN || 'https://my-auto-importfrontend.vercel.app';
+const EXTRA_ORIGINS = (process.env.FRONTEND_ORIGINS || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+
+// ========= C O R S  H E L P E R S =========
+function isAllowedOrigin(origin) {
+  if (!origin) return false;
+  if (origin === PROD_ORIGIN) return true;
+  if (EXTRA_ORIGINS.includes(origin)) return true;
+
+  // Permite previews de Vercel del frontend:
+  // - my-auto-importfrontend-xxxxx-*.vercel.app
+  // - my-auto-importfrontend.vercel.app
+  try {
+    const u = new URL(origin);
+    const host = u.hostname;
+    const isHttps = u.protocol === 'https:';
+    const isPreview =
+      host.endsWith('.vercel.app') &&
+      (host.startsWith('my-auto-importfrontend-') || host === 'my-auto-importfrontend.vercel.app');
+    return isHttps && isPreview;
+  } catch {
+    return false;
+  }
+}
+
+function setCors(req, res) {
+  const origin = req.headers.origin;
+  const allow = isAllowedOrigin(origin) ? origin : PROD_ORIGIN;
+
+  if (allow) res.setHeader('Access-Control-Allow-Origin', allow);
   res.setHeader('Vary', 'Origin');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
   res.setHeader('Access-Control-Max-Age', '86400');
   res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
 }
+
 function json(res, code, payload) {
   res.status(code).setHeader('Content-Type', 'application/json');
   res.end(JSON.stringify(payload));
 }
+
 function safeParseBody(req) {
   return new Promise((resolve, reject) => {
     let raw = '';
@@ -30,14 +64,17 @@ function safeParseBody(req) {
   });
 }
 
+// ========= H A N D L E R =========
 module.exports = async (req, res) => {
   try {
-    setCors(res);
+    setCors(req, res);
 
+    // Preflight
     if (req.method === 'OPTIONS') {
       res.statusCode = 204;
       return res.end();
     }
+
     if (req.method !== 'POST') {
       return json(res, 405, { ok:false, error:'METHOD_NOT_ALLOWED' });
     }
@@ -60,7 +97,7 @@ module.exports = async (req, res) => {
     try {
       ({ Resend } = await import('resend'));
     } catch (e) {
-      return json(res, 500, { ok:false, error:'RESEND_IMPORT_ERROR', details: String(e && e.message || e) });
+      return json(res, 500, { ok:false, error:'RESEND_IMPORT_ERROR', details: String((e && e.message) || e) });
     }
 
     let body;
@@ -90,8 +127,7 @@ module.exports = async (req, res) => {
       message
     ].filter(Boolean).join('\n');
 
-    // Nota: en el SDK de Resend el campo es reply_to (snake) o replyTo (camel) según versión.
-    // Probamos ambos para maximizar compatibilidad.
+    // Enviar (probamos reply_to y replyTo para compatibilidad)
     let sendResult;
     try {
       sendResult = await resend.emails.send({
@@ -99,11 +135,11 @@ module.exports = async (req, res) => {
         to: ADMIN_EMAIL,
         subject,
         text,
-        reply_to: email,   // funciona en REST/SDK modernos
-        replyTo: email     // fallback para algunas versiones del SDK
+        reply_to: email,
+        replyTo: email
       });
     } catch (e) {
-      return json(res, 502, { ok:false, error:'RESEND_SDK_THROW', details:String(e && e.message || e) });
+      return json(res, 502, { ok:false, error:'RESEND_SDK_THROW', details:String((e && e.message) || e) });
     }
 
     if (sendResult?.error) {
@@ -112,6 +148,6 @@ module.exports = async (req, res) => {
 
     return json(res, 200, { ok:true });
   } catch (err) {
-    return json(res, 500, { ok:false, error:'UNEXPECTED_ERROR', details:String(err && err.message || err) });
+    return json(res, 500, { ok:false, error:'UNEXPECTED_ERROR', details:String((err && err.message) || err) });
   }
 };
